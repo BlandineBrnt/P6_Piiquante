@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 // Connexion à la base de données mongooseDB
 mongoose
     .connect(
-        "mongodb+srv://blandine:D8RzhmAe97IMkvY2@cluster0.hubtz.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+        "mongodb+srv://blandine:D8RzhmAe97IMkvY2@cluster0.wp95b1l.mongodb.net/?retryWrites=true&w=majority",
         { useNewUrlParser: true, useUnifiedTopology: true }
     )
     .then(() => console.log("Connexion à MongoDB réussie !"))
