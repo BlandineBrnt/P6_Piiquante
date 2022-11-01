@@ -2,14 +2,16 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 
-// Connexion à la base de données mongooseDB
+const userRoutes = require("./routes/user");
+const sauceRoutes = require("./routes/sauce");
+// Connexion à la base de données mongooseDBmongoose
 mongoose
     .connect(
-        "mongodb+srv://blandine:D8RzhmAe97IMkvY2@cluster0.wp95b1l.mongodb.net/?retryWrites=true&w=majority",
+        "mongodb+srv://Blandine:6Ql1VuCgifEbHDt9@cluster0.jng4dpe.mongodb.net/?retryWrites=true&w=majority",
         { useNewUrlParser: true, useUnifiedTopology: true }
     )
     .then(() => console.log("Connexion à MongoDB réussie !"))
-    .catch(() => console.log("Connexion à MongoDB échouée !"));
+    .catch((err) => console.log("Connexion à MongoDB échouée !", err));
 
 app.use(express.json());
 
