@@ -1,2 +1,18 @@
+// ajout de mongoose pour la base de donnée
 const mongoose = require("mongoose");
-const uniqueValidateur = require("mongoose-unique-validateur");
+// ajout de mangoose-unique-validator afin d'empecher deux utilisateurs d'avoir la même adresse email
+const uniqueValidator = require("mongoose-unique-validator");
+
+// Schéma des données pour chaque utilisateur
+const userSchema = mongoose.Schema({
+    // indique que l'email est requis et qu'il ne doit pas déjà être utilisé
+    email: { type: String, required: true, unique: true },
+    // indique qu'un mot de passe est requis
+    password: { type: String, required: true },
+});
+
+// indique que userSchema doit prendre en compte la variable uniqueValidator
+userSchema.plugin(uniqueValidator);
+
+// exportation du schema pour l'appeler dans le controller user.js
+module.exports = mongoose.model("User", userSchema);
