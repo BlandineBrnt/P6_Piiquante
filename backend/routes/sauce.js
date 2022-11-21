@@ -18,7 +18,7 @@ router.get("/:id", auth, sauceCtrl.getOneSauce); // Route pour obtenir une sauce
 
 router.put("/:id", auth, multer, sauceCtrl.modifySauce); // Route pour modfier une sauce ajoutée par son utilisateur.
 
-router.delete("/:id", auth, sauceCtrl.deleteSauce); // Route qui permet de supprimer une sauce par son utilisateur.
+router.delete("/:id", auth, sauceCtrl.deleteOneSauce); // Route qui permet de supprimer une sauce par son utilisateur.
 
 router.post("/:id/like", auth, sauceCtrl.sauceLike); // Route qui permet de liker ou disliker une sauce une sauce par utilisateur.
 

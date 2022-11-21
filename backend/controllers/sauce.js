@@ -19,81 +19,93 @@ exports.getOneSauce = (req, res, next) => {
 
 // création de sauce
 exports.createSauce = (req, res, next) => {
-    const sauceObject = JSON.parse(req.body.sauce); // transformer la requête envoyée par le frontend en JSON
-    delete sauceObject._id; // supprimer l'id mongoose généré par défaut
+    // transformer la requête envoyée par le frontend en JSON
+    const sauceObject = JSON.parse(req.body.sauce);
+    // supprimer l'id mongoose généré par défaut
+    delete sauceObject._id;
+    // création du nouvel objet
     const sauce = new Sauce({
-        // création du nouvel objet
-        ...sauceObject, // Copie les champs de la requête sans l'id car il va être génerer pas mongoDB
+        // récupération du corps de la requête
+        ...sauceObject,
+        // modification de l'url de l'image
         imageUrl: `${req.protocol}://${req.get("host")}/images/${
-            // Crée L'url de l'image
-
             req.file.filename
         }`,
+        likes: 0,
+        dislikes: 0,
+        usersLiked: [],
+        usersdisLiked: [],
     });
-
-    sauce // On utilise la méthode save pour enregistrer la nouvelle sauce dans la base de données.
+    // sauvegarde du nouvel objet dans la base de donnée
+    sauce
         .save()
-        .then(() => res.status(201).json({ message: "Sauce enregistré " }))
-        .catch((error) => res.status(400).json({ error }));
+        // si aucune erreur répond 201 created et un message
+        .then(() => res.status(201).json({ message: "Article enregistrée !" }))
+        // si erreur répond une erreur 400 et un message d'erreur
+        .catch((error) => {
+            res.status(400).json({ error: error });
+        });
 };
 
 // Permet à l'utilisateur de modifier les sauces de son choix qui l'a ajoutées uniquement.
 exports.modifySauce = (req, res, next) => {
+    if (req.file) {
+        Sauce.findOne({ _id: req.params.id }).then((sauce) => {
+            // récupération du deuxième élément du tableau constitué du avant/après '/images/' donc le après
+            const filename = sauce.imageUrl.split("/images/")[1];
+            // supprime le après '/images/' et début du callback
+            console.log(sauce.imageUrl);
+            fs.unlink(`images/${filename}`, () =>
+                console.log("Image supprimée !")
+            );
+        });
+    }
+    // vérifie si l'objet existe
     const sauceObject = req.file
         ? {
+              // récupération du corps de la requête
               ...JSON.parse(req.body.sauce),
+
+              // traitement de la nouvelle image
               imageUrl: `${req.protocol}://${req.get("host")}/images/${
                   req.file.filename
               }`,
           }
-        : { ...req.body };
-    // On utilise la méthode updateOne pour mettre à jour la modification.
-    delete sauceObject._userId;
-    Sauce.findOne({ _id: req.params.id })
-        .then((sauce) => {
-            if (sauce.userId != req.auth.userId) {
-                res.status(401).json({ message: "Non authorisé" });
-            } else {
-                const filename = sauce.imageUrl.split("/images/")[1];
-                fs.unlink(`images/${filename}`, () => {
-                    Sauce.updateOne(
-                        { _id: req.params.id },
-                        { ...sauceObject, _id: req.params.id }
-                    )
-                        .then(() =>
-                            res.status(200).json({ message: "Objet modifié!" })
-                        )
-                        .catch((error) => res.status(401).json({ error }));
-                });
-            }
-        })
-        .catch((error) => {
-            res.status(400).json({ error });
-        });
+        : // sinon on modifie juste le corps de la requête
+          { ...req.body };
+    // modification de la sauce dans la base de donnée
+    Sauce.updateOne(
+        { _id: req.params.id },
+        { ...sauceObject, _id: req.params.id }
+    )
+        // réponse 200 + message si aucune erreur
+        .then(() => res.status(200).json({ message: "Article modifiée !" }))
+        // réponse 400 + message si erreur
+        .catch((error) => res.status(400).json({ error: error }));
 };
 
 //Permet à l'utilisateur de supprimer les sauces de son choix qui l'a ajoutées uniquement.
-exports.deleteSauce = (req, res, next) => {
+exports.deleteOneSauce = (req, res, next) => {
+    // récupère l'objet avec ses données
     Sauce.findOne({ _id: req.params.id })
         .then((sauce) => {
-            if (sauce.userId != req.auth.userId) {
-                res.status(401).json({ message: "Non authorisé" });
-            } else {
-                const filename = sauce.imageUrl.split("/images/")[1];
-                fs.unlink(`images/${filename}`, () => {
-                    Sauce.deleteOne({ _id: req.params.id })
-                        .then(() => {
-                            res.status(200).json({
-                                message: "Sauce supprimée !",
-                            });
-                        })
-                        .catch((error) => res.status(401).json({ error }));
-                });
-            }
+            // récupération du deuxième élément du tableau constitué du avant/après '/images/' donc le après
+            const filename = sauce.imageUrl.split("/images/")[1];
+            // supprime le après '/images/' et début du callback
+            console.log(sauce.imageUrl);
+            fs.unlink(`images/${filename}`, () => {
+                // supprime la sauce de la base de donnée
+                Sauce.deleteOne({ _id: req.params.id })
+                    // réponse 200 + message si aucune erreur
+                    .then(() =>
+                        res.status(200).json({ message: "Article supprimé !" })
+                    )
+                    // réponse 400 + message si erreur
+                    .catch((error) => res.status(400).json({ error: error }));
+            });
         })
-        .catch((error) => {
-            res.status(500).json({ error });
-        });
+        // réponse 500 + message si erreur
+        .catch((error) => res.status(500).json({ error: error }));
 };
 //POST like et dislike
 exports.sauceLike = (req, res, next) => {

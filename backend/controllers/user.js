@@ -7,59 +7,35 @@ const User = require("../models/User");
 // On importe le package dotenv pour pouvoir utiliser par la suite la ou les variable(s) d'environnement.
 require("dotenv").config();
 
-//Fonction qui permet de verifier que l'email est correctement saisi
-function checkEmail(mail) {
-    const emailRegEx = new RegExp(
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,6})+$/gi
-    );
-    return emailRegEx.test(mail);
-}
-
-// Création de nouvel utilisateur
 exports.signup = (req, res, next) => {
-    if (!checkEmail(req.body.email)) {
-        res.status(400).json({
-            error: "L'email n'a pas un format valide.",
-        });
-    } else {
-        let passValidate = schema.validate(req.body.password, {
-            details: true,
-        });
-        let passValidateMsg = passValidate.map((x) => x.message);
-        if (passValidate.length > 0) {
-            res.status(400).json({
-                message: passValidateMsg,
+    // appelle bcrypt dans le mot de passe afin de 'saler' celui ci et on demande à l'algorithme de faire 10 tours afin de le sécuriser
+    bcrypt
+        .hash(req.body.password, 10)
+        // récupération du hash
+        .then((hash) => {
+            // création du compte
+            const user = new User({
+                // récupération de l'email et du mdp hashé présent dans le corps de la requête
+                email: req.body.email,
+                password: hash,
             });
-        } else {
-            // On appel la fonction hash, pour crypter un mot de passe et il va éxectuer 10 tour pour notre algorithme de cryptage.
-            bcrypt
-                .hash(req.body.password, 10)
-                .then((hash) => {
-                    // Inscription du nouvel utilisateur
-                    const user = new User({
-                        email: req.body.email,
-                        password: hash, // Mot de passe crypté (hash).
-                    });
-                    user.save() // On utilise la méthode save pour enregistrer l'utilisateur dans la base de données.
-                        .then(() => {
-                            res.status(201).json({
-                                message: "Utilisateur créé!",
-                            });
-                        })
-                        .catch((error) => {
-                            res.status(400).json({
-                                error: error,
-                            });
-                        });
-                })
-                .catch((error) => res.status(500).json({ error }));
-        }
-    }
+            // sauvegarde les identifiants dans la base de donnée
+            user.save()
+                // si aucune erreur répond 201 created et un message
+                .then(() =>
+                    res.status(201).json({ message: "Utilisateur créé !" })
+                )
+                // si erreur répond une erreur 400 et un message d'erreur
+                .catch((error) => res.status(400).json({ error: error }));
+        })
+        // si erreur répond une erreur 500 et un message d'erreur
+        .catch((error) => res.status(500).json({ error: error }));
 };
 
-// Middleware pour la connexion(ou d'identification) de l'utilisateur.
+/////////////////////////////////// fonction qui permet de se connecter à un compte créé ///////////////////////////////////
 exports.login = (req, res, next) => {
-    User.findOne({ email: req.body.email }) // On utilise la méthode findOne pour trouver un seul utilisateur de la base de données et de son email.
+    // vérifie si l'email apparait bien dans la base de donnée
+    User.findOne({ email: req.body.email })
         .then((user) => {
             // si elle est introuvable répond une erreur 401 + message
             if (!user) {
@@ -79,11 +55,9 @@ exports.login = (req, res, next) => {
                     }
                     // si le mot de passe est valide réponse 200 + réponse json contenant l'ID de l'utilisateur et un token
                     res.status(200).json({
-                        // Création de token d'authentification
                         userId: user._id,
                         // attribution d'un token
                         token: jwt.sign(
-                            // indentifiant de l'user dans la base de données
                             { userId: user._id },
                             // clé d'encodage avec délais d'expiration
                             "RANDOM_TOKEN_SECRET",
@@ -91,9 +65,9 @@ exports.login = (req, res, next) => {
                         ),
                     });
                 })
-
-                .catch((error) => res.status(500).json({ error }));
+                // si erreur répond 500 + message
+                .catch((error) => res.status(500).json({ error: error }));
         })
-
-        .catch((error) => res.status(500).json({ error }));
+        // si erreur répond 500 + message
+        .catch((error) => res.status(500).json({ error: error }));
 };
